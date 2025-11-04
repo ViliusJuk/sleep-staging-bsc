@@ -1,0 +1,17 @@
+seed: 42
+fs_target: 100        # resampling į 100 Hz
+epoch_sec: 30
+channel: "Fpz-Cz"
+classes: ["W", "N1", "N2", "N3", "REM"]
+
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  models_dir: "models"
+  results_dir: "results"
+
+split:
+  strategy: "by_subject"
+  test_subjects: ["SC4001E0", "SC4002E0","SC4012E0","SC4081E0"] 
+  val_subjects:  [SC4091E0]
+  test_subjects: ["SC4311E0"]

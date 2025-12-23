@@ -1,0 +1,8 @@
+=== BEFORE VENV ===
+=== ACTIVATING VENV ===
+=== AFTER VENV ===
+/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/bin/python
+Python 3.10.12
+=== TRY IMPORT TRAIN ===
+IMPORT FAILED ❌ cannot import name 'PROC' from 'src.sleepstaging.paths' (/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/paths.py)
+=== DONE ===

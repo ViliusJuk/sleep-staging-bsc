@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/train_ma_bilstm.py", line 73, in <module>
+    for epoch in range(1, EPOCHS+1):
+NameError: name 'EPOCHS' is not defined

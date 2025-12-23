@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/train_ma_bilstm.py", line 115, in <module>
+    train()
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/train_ma_bilstm.py", line 59, in train
+    train_ds = SleepEDFNPZDataset(split="train")
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/dataset.py", line 22, in __init__
+    exclude = set(CFG["split"]["test_subjects"] + CFG["split"]["val_subjects"])
+KeyError: 'split'

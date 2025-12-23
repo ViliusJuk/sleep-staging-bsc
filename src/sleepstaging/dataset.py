@@ -2,13 +2,13 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from pathlib import Path
-from .paths import CFG, PROC
+from .paths import CFG, PROCESSED
 from .labels import CLASSES
 
 class SleepEDFNPZDataset(Dataset):
     """
     Krauna .npz (X, y) iš data/processed. Galima rinktis split: 'train'/'val'/'test'.
-    Split parenkamas pagal subject ID sąrašus config.yaml.
+    Split parenkamas pagal subject ID iš config.yaml.
     """
     def __init__(self, split="test", subjects=None):
         self.files = []
@@ -18,12 +18,12 @@ class SleepEDFNPZDataset(Dataset):
             elif split == "val":
                 subjects = CFG["split"]["val_subjects"]
             else:
-                all_npz = sorted([p.stem for p in PROC.glob("*.npz")])
+                all_npz = sorted([p.stem for p in PROCESSED.glob("*.npz")])
                 exclude = set(CFG["split"]["test_subjects"] + CFG["split"]["val_subjects"])
                 subjects = [s for s in all_npz if s not in exclude]
 
         for sid in subjects:
-            p = PROC / f"{sid}.npz"
+            p = PROCESSED / f"{sid}.npz"
             if p.exists():
                 self.files.append(p)
             else:
@@ -36,8 +36,9 @@ class SleepEDFNPZDataset(Dataset):
             ys.append(d["y"])  # (E,)
         if not Xs:
             raise RuntimeError("Nerasta .npz duomenų pasirinktai aibei.")
-        self.X = np.concatenate(Xs, axis=0)
-        self.y = np.concatenate(ys, axis=0)
+
+        self.X = np.concatenate(Xs, axis=0).astype(np.float32)
+        self.y = np.concatenate(ys, axis=0).astype(np.int64)
 
         assert self.X.ndim == 3 and self.X.shape[1] == 1, "Tikimasi (E,1,T)"
         assert self.X.shape[0] == self.y.shape[0], "X ir y turi sutapti pagal E"
@@ -46,18 +47,22 @@ class SleepEDFNPZDataset(Dataset):
         return self.y.shape[0]
 
     def __getitem__(self, idx):
-        return torch.from_numpy(self.X[idx]), torch.tensor(self.y[idx], dtype=torch.long)
+        x = torch.from_numpy(self.X[idx]).float()
+        y = torch.tensor(self.y[idx], dtype=torch.long)
+        return x, y
 
-# Palieku ir stub klasę testavimui (jei reikėtų)
+
 class SleepEDFTestDataset(Dataset):
     def __init__(self, n_samples=1024, epoch_samples=3000):
         self.X = np.random.randn(n_samples, 1, epoch_samples).astype(np.float32)
         probs = np.array([0.2, 0.2, 0.35, 0.1, 0.15])
-        y = np.random.choice(len(CLASSES), size=n_samples, p=probs)
-        self.y = y.astype(np.int64)
+        self.y = np.random.choice(len(CLASSES), size=n_samples, p=probs).astype(np.int64)
 
     def __len__(self):
         return len(self.y)
 
     def __getitem__(self, idx):
-        return torch.from_numpy(self.X[idx]), torch.tensor(self.y[idx])
+        x = torch.from_numpy(self.X[idx]).float()
+        y = torch.tensor(self.y[idx], dtype=torch.long)
+        return x, y
+

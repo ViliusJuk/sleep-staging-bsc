@@ -1,0 +1,120 @@
+=== PYTHON ===
+/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/bin/python
+Python 3.10.12
+=== GPU ===
+Wed Nov  5 19:02:37 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 550.144.03             Driver Version: 550.144.03     CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Tesla V100-SXM2-32GB           On  |   00000000:06:00.0 Off |                    0 |
+| N/A   32C    P0             42W /  300W |       1MiB /  32768MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+=== START TRAIN ===
+[INFO] SEQ_LEN=20 | TRAIN=33 | VAL=4
+[INFO] Start Transformer training for 15 epochs on cuda
+[E01] batch 000 | loss=1.4985
+[E01] batch 001 | loss=1.3468
+[E01] batch 002 | loss=1.3039
+[E01] batch 003 | loss=1.1780
+[E01] batch 004 | loss=0.9648
+[E01] total_loss=6.292 | val_acc=0.500 | val_f1=0.333
+[SAVE] New best F1=0.333 -> /scratch/lustre/home/viju8335/projects/sleep-staging-bsc/models/best_transformer.pth
+[E02] batch 000 | loss=1.1509
+[E02] batch 001 | loss=1.2333
+[E02] batch 002 | loss=1.2364
+[E02] batch 003 | loss=0.9590
+[E02] batch 004 | loss=1.0591
+[E02] total_loss=5.639 | val_acc=0.500 | val_f1=0.333
+[E03] batch 000 | loss=1.0211
+[E03] batch 001 | loss=1.1008
+[E03] batch 002 | loss=0.9710
+[E03] batch 003 | loss=0.8999
+[E03] batch 004 | loss=0.9552
+[E03] total_loss=4.948 | val_acc=0.500 | val_f1=0.333
+[E04] batch 000 | loss=0.9485
+[E04] batch 001 | loss=0.9849
+[E04] batch 002 | loss=1.0167
+[E04] batch 003 | loss=0.9691
+[E04] batch 004 | loss=1.1423
+[E04] total_loss=5.061 | val_acc=0.500 | val_f1=0.333
+[E05] batch 000 | loss=0.9009
+[E05] batch 001 | loss=0.8804
+[E05] batch 002 | loss=0.9324
+[E05] batch 003 | loss=0.9412
+[E05] batch 004 | loss=0.9360
+[E05] total_loss=4.591 | val_acc=0.500 | val_f1=0.333
+[E06] batch 000 | loss=0.8735
+[E06] batch 001 | loss=0.8855
+[E06] batch 002 | loss=0.8456
+[E06] batch 003 | loss=0.8114
+[E06] batch 004 | loss=0.8211
+[E06] total_loss=4.237 | val_acc=0.500 | val_f1=0.333
+[E07] batch 000 | loss=0.8133
+[E07] batch 001 | loss=0.8324
+[E07] batch 002 | loss=0.8706
+[E07] batch 003 | loss=0.9002
+[E07] batch 004 | loss=0.9089
+[E07] total_loss=4.325 | val_acc=0.500 | val_f1=0.333
+[E08] batch 000 | loss=0.9021
+[E08] batch 001 | loss=0.8337
+[E08] batch 002 | loss=0.9544
+[E08] batch 003 | loss=0.7968
+[E08] batch 004 | loss=0.7751
+[E08] total_loss=4.262 | val_acc=0.500 | val_f1=0.333
+[E09] batch 000 | loss=0.7749
+[E09] batch 001 | loss=0.9121
+[E09] batch 002 | loss=0.8501
+[E09] batch 003 | loss=0.8344
+[E09] batch 004 | loss=0.7816
+[E09] total_loss=4.153 | val_acc=0.500 | val_f1=0.333
+[E10] batch 000 | loss=0.8154
+[E10] batch 001 | loss=0.7516
+[E10] batch 002 | loss=0.8522
+[E10] batch 003 | loss=0.9070
+[E10] batch 004 | loss=0.7497
+[E10] total_loss=4.076 | val_acc=0.500 | val_f1=0.333
+[E11] batch 000 | loss=0.8312
+[E11] batch 001 | loss=0.8739
+[E11] batch 002 | loss=0.8055
+[E11] batch 003 | loss=0.8065
+[E11] batch 004 | loss=0.7695
+[E11] total_loss=4.087 | val_acc=0.500 | val_f1=0.333
+[E12] batch 000 | loss=0.6818
+[E12] batch 001 | loss=0.8186
+[E12] batch 002 | loss=0.8105
+[E12] batch 003 | loss=0.8710
+[E12] batch 004 | loss=0.5887
+[E12] total_loss=3.771 | val_acc=0.500 | val_f1=0.333
+[E13] batch 000 | loss=0.8694
+[E13] batch 001 | loss=0.7890
+[E13] batch 002 | loss=0.8993
+[E13] batch 003 | loss=0.7038
+[E13] batch 004 | loss=1.0571
+[E13] total_loss=4.319 | val_acc=0.500 | val_f1=0.333
+[E14] batch 000 | loss=0.7947
+[E14] batch 001 | loss=0.7870
+[E14] batch 002 | loss=0.8392
+[E14] batch 003 | loss=0.8159
+[E14] batch 004 | loss=0.6643
+[E14] total_loss=3.901 | val_acc=0.500 | val_f1=0.333
+[E15] batch 000 | loss=0.7399
+[E15] batch 001 | loss=0.8283
+[E15] batch 002 | loss=0.8581
+[E15] batch 003 | loss=0.7526
+[E15] batch 004 | loss=0.6717
+[E15] total_loss=3.851 | val_acc=0.500 | val_f1=0.333
+[INFO] TRAIN DONE
+=== TRAIN DONE ===

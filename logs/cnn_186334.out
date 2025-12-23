@@ -1,0 +1,43 @@
+Lmod has detected the following error: The following module(s) are unknown:
+"python/3.10"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore_cache load "python/3.10"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/train_sleep_staging.py", line 143, in <module>
+    train()
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/train_sleep_staging.py", line 91, in train
+    logits = model(X)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/src/sleepstaging/model_baseline.py", line 22, in forward
+    return self.net(x)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/container.py", line 250, in forward
+    input = module(input)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1775, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1786, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/conv.py", line 371, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/scratch/lustre/home/viju8335/projects/sleep-staging-bsc/.venv/lib/python3.10/site-packages/torch/nn/modules/conv.py", line 366, in _conv_forward
+    return F.conv1d(
+RuntimeError: Input type (double) and bias type (float) should be the same
+/var/lib/slurm-llnl/slurmd/job186334/slurm_script: line 16: SLURM: command not found

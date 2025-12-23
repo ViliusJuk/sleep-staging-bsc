@@ -1,143 +1,175 @@
-import time, csv
-from pathlib import Path
-import numpy as np
-import torch, torch.nn as nn
+import torch
+from torch import nn
 from torch.utils.data import DataLoader, WeightedRandomSampler
+import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, cohen_kappa_score
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from .paths import CFG, RESULTS, MODELS
-from .utils import set_seed
-from .labels import CLASSES
 from .dataset import SleepEDFNPZDataset
+from .labels import CLASSES
 from .model_baseline import CNN1DBaseline
+from .paths import MODELS, RESULTS, CFG
+from .utils import set_seed
 
-def make_loader(split, batch_size=128, shuffle=False, weighted=False):
-    ds = SleepEDFNPZDataset(split=split)
-    if weighted:
-        # klasių svoriai pagal dažnius (rečiau pasitaikančioms didesnis svoris)
-        counts = np.bincount(ds.y, minlength=len(CLASSES)).astype(np.float64)
-        probs = counts / counts.sum()
-        class_weights = (1.0 / (probs + 1e-9))
-        sample_weights = class_weights[ds.y]
-        sampler = WeightedRandomSampler(sample_weights, num_samples=len(sample_weights), replacement=True)
-        loader = DataLoader(ds, batch_size=batch_size, sampler=sampler, num_workers=0)
-        return ds, loader, torch.tensor(class_weights, dtype=torch.float32)
-    else:
-        loader = DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=0)
-        return ds, loader, None
+
+def zscore(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+    """Per-epoch z-score normalizacija: (E, 1, T) per T ašį."""
+    m = x.mean(dim=-1, keepdim=True)
+    s = x.std(dim=-1, keepdim=True)
+    return (x - m) / (s + eps)
+
+
+def compute_epoch_class_weights(ds, n_classes: int, smoothing: float = 1.0) -> torch.Tensor:
+    """
+    Stabilūs klasės svoriai su Laplace smoothing (+1) ir normalizacija į mean=1.
+    """
+    counts = np.bincount(ds.y.astype(int), minlength=n_classes).astype(np.float64)
+    counts += float(smoothing)
+    freq = counts / counts.sum()
+    w = 1.0 / (freq + 1e-12)
+    w = w / w.mean()
+    return torch.tensor(w, dtype=torch.float32)
+
 
 @torch.no_grad()
-def eval_epoch(model, loader, device):
+def evaluate(model: nn.Module, loader: DataLoader, device: torch.device):
     model.eval()
     y_true, y_pred = [], []
+
     for X, y in loader:
-        X = X.to(device)
-        logits = model(X)
-        pred = torch.argmax(logits, dim=1).cpu().numpy()
-        y_true.extend(y.numpy())
+        X = X.to(device=device, dtype=torch.float32, non_blocking=True)
+        y = y.to(device=device, dtype=torch.long,   non_blocking=True)
+        X = zscore(X)
+
+        logits = model(X)  # TIKIMĖS RAW LOGITS
+        pred = torch.argmax(logits, dim=1).detach().cpu().numpy()
         y_pred.extend(pred)
+        y_true.extend(y.detach().cpu().numpy())
+
+    if not y_true:
+        return 0.0, 0.0, 0.0
+
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
     acc = accuracy_score(y_true, y_pred)
-    f1  = f1_score(y_true, y_pred, average="macro", zero_division=0.0)
-    kap = cohen_kappa_score(y_true, y_pred)
-    return acc, f1, kap
+    f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
+    kappa = cohen_kappa_score(y_true, y_pred)
+    return acc, f1, kappa
+
 
 def train():
     set_seed(CFG["seed"])
-    RESULTS.mkdir(exist_ok=True, parents=True)
-    MODELS.mkdir(exist_ok=True, parents=True)
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    MODELS.mkdir(parents=True, exist_ok=True)
+
+    # --- DATA ---
+    train_ds = SleepEDFNPZDataset(split="train")
+    val_ds   = SleepEDFNPZDataset(split="val")
+
+    # Subalansuotas mėginių ėmimas per batch'us
+    n_classes = len(CLASSES)
+    class_counts = np.bincount(train_ds.y.astype(int), minlength=n_classes).astype(np.float64)
+    class_weights_for_sampler = class_counts.sum() / (class_counts + 1e-12)
+    sample_weights = class_weights_for_sampler[train_ds.y.astype(int)]
+
+    sampler = WeightedRandomSampler(
+        weights=torch.from_numpy(sample_weights).float(),
+        num_samples=len(train_ds),
+        replacement=True,
+    )
+
+    train_loader = DataLoader(
+        train_ds, batch_size=256, sampler=sampler, num_workers=0, pin_memory=True
+    )
+    val_loader   = DataLoader(
+        val_ds, batch_size=512, shuffle=False, num_workers=0, pin_memory=True
+    )
+
+    print(f"[INFO] Epoch-level CNN | TRAIN={len(train_ds)} | VAL={len(val_ds)}")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"=== DEVICE: {device} ===")
 
-    # Data
-    train_ds, train_loader, class_w = make_loader("train", batch_size=128, weighted=True)
-    val_ds,   val_loader,   _       = make_loader("val",   batch_size=256, shuffle=False)
-    n_classes = len(CLASSES)
+    # --- MODEL ---
+    model = CNN1DBaseline(n_classes=n_classes).to(device=device, dtype=torch.float32)
+    print("[DBG] model dtype:", next(model.parameters()).dtype)
 
-    # Model
-    model = CNN1DBaseline(n_classes=n_classes).to(device)
+    # Greitas sanity check ant pirmo batch'o
+    X0, y0 = next(iter(train_loader))
+    print("[DBG] first batch dtypes:", X0.dtype, y0.dtype, "| shape:", X0.shape)
+    del X0, y0
 
-    # Loss (su class weights)
-    if class_w is not None:
-        loss_fn = nn.CrossEntropyLoss(weight=class_w.to(device))
-    else:
-        loss_fn = nn.CrossEntropyLoss()
+    # --- LOSS (su class weights) ---
+   # weights = compute_epoch_class_weights(train_ds, n_classes).to(device)
+   # print("[INFO] class weights (CE):", weights.detach().cpu().numpy())
 
-    # Optimizer / scheduler
-    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
-    sched = ReduceLROnPlateau(opt, mode="max", factor=0.5, patience=3)
+    # Naudojam CrossEntropyLoss (modelis TURI grąžinti RAW LOGITS)
+    # Jei tavo torch versija palaiko, galima švelniai pridėti label smoothing
+    try:
+       # loss_fn = nn.CrossEntropyLoss(weight=weights, label_smoothing=0.05)
+	loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)
 
-    best_f1 = -1.0
-    patience = 8
-    wait = 0
+    except TypeError:
+        loss_fn = nn.CrossEntropyLoss(weight=weights)
 
-    # log
-    log_path = RESULTS / "train_log.csv"
-    with open(log_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["epoch","train_loss","val_acc","val_macro_f1","val_kappa","lr"])
+    # --- OPT/SCHED ---
+    opt = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-4)
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        opt, mode="max", factor=0.5, patience=3
+    )
 
-    max_epochs = 30
-    for epoch in range(1, max_epochs+1):
+    best_f1 = 0.0
+    patience = 10
+    no_improve = 0
+    EPOCHS = 30
+
+    print("=== START TRAIN ===")
+    for epoch in range(1, EPOCHS + 1):
         model.train()
-        t0 = time.time()
-        run_loss, n_batches = 0.0, 0
+        total_loss = 0.0
 
-        for X, y in train_loader:
-            X = X.to(device)
-            y = y.to(device)
-            logits = model(X)
+        for bi, (X, y) in enumerate(train_loader):
+            X = X.to(device=device, dtype=torch.float32, non_blocking=True)
+            y = y.to(device=device, dtype=torch.long,   non_blocking=True)
+            X = zscore(X)
+
+            opt.zero_grad(set_to_none=True)
+            logits = model(X)            # RAW LOGITS
             loss = loss_fn(logits, y)
-
-            opt.zero_grad()
             loss.backward()
+
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             opt.step()
 
-            run_loss += loss.item()
-            n_batches += 1
+            total_loss += float(loss.detach().item())
+            if bi % 10 == 0:
+                with torch.no_grad():
+                    pred = torch.argmax(logits, dim=1)
+                    acc_b = (pred == y).float().mean().item()
+                print(f"[E{epoch:02d}] batch {bi:04d} | loss={loss.detach().item():.4f} | acc={acc_b:.3f}")
 
-        train_loss = run_loss / max(1, n_batches)
-        val_acc, val_f1, val_kap = eval_epoch(model, val_loader, device)
-        sched.step(val_f1)
+        acc, f1, kappa = evaluate(model, val_loader, device)
+        sched.step(f1)
 
-        # log
-        with open(log_path, "a", newline="") as f:
-            w = csv.writer(f)
-            w.writerow([epoch, f"{train_loss:.6f}", f"{val_acc:.4f}", f"{val_f1:.4f}", f"{val_kap:.4f}", opt.param_groups[0]["lr"]])
+        print(
+            f"[E{epoch:02d}] total_loss={total_loss:.3f} | "
+            f"VAL acc={acc:.3f} | F1={f1:.3f} | kappa={kappa:.3f}"
+        )
 
-        # early stopping & checkpoint
-        improved = val_f1 > best_f1 + 1e-4
-        if improved:
-            best_f1 = val_f1
-            wait = 0
-            ckpt_path = MODELS / "best_cnn1d.pth"
-            torch.save(model.state_dict(), ckpt_path)
+        if f1 > best_f1:
+            best_f1 = f1
+            no_improve = 0
+            torch.save(model.state_dict(), MODELS / "best_cnn1d.pth")
+            print("[SAVE] New best CNN1D (by F1)")
         else:
-            wait += 1
+            no_improve += 1
+            if no_improve >= patience:
+                print("[STOP] Early stopping (no improvement)")
+                break
 
-        dur = time.time() - t0
-        print(f"[{epoch:02d}/{max_epochs}] loss={train_loss:.4f} | val_acc={val_acc:.4f} val_f1={val_f1:.4f} val_kappa={val_kap:.4f} | lr={opt.param_groups[0]['lr']:.1e} | {dur:.1f}s")
+    torch.save(model.state_dict(), MODELS / "last_cnn1d.pth")
+    print("=== TRAIN DONE ===")
 
-        if wait >= patience:
-            print(f"Early stopping (no val_f1 improve {patience} epochs). Best val_f1={best_f1:.4f}")
-            break
-
-    # paprasta kreivių vizualizacija
-    try:
-        import matplotlib.pyplot as plt
-        import pandas as pd
-        df = pd.read_csv(log_path)
-        plt.figure(figsize=(7,4))
-        plt.plot(df["epoch"], df["train_loss"], label="train loss")
-        plt.plot(df["epoch"], df["val_macro_f1"], label="val macro-F1")
-        plt.plot(df["epoch"], df["val_acc"], label="val acc")
-        plt.xlabel("Epoch"); plt.legend(); plt.tight_layout()
-        plt.savefig(RESULTS / "training_curves.png", dpi=300)
-        plt.close()
-    except Exception as e:
-        print("Plot fail:", e)
 
 if __name__ == "__main__":
     train()
+

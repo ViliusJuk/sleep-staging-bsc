@@ -37,10 +37,10 @@ def evaluate(model: nn.Module, loader: DataLoader, device: torch.device):
 
     for X, y in loader:
         X = X.to(device=device, dtype=torch.float32, non_blocking=True)
-        y = y.to(device=device, dtype=torch.long,   non_blocking=True)
+        y = y.to(device=device, dtype=torch.long, non_blocking=True)
         X = zscore(X)
 
-        logits = model(X)  # TIKIMĖS RAW LOGITS
+        logits = model(X)  # tikimės RAW LOGITS
         pred = torch.argmax(logits, dim=1).detach().cpu().numpy()
         y_pred.extend(pred)
         y_true.extend(y.detach().cpu().numpy())
@@ -63,7 +63,7 @@ def train():
 
     # --- DATA ---
     train_ds = SleepEDFNPZDataset(split="train")
-    val_ds   = SleepEDFNPZDataset(split="val")
+    val_ds = SleepEDFNPZDataset(split="val")
 
     # Subalansuotas mėginių ėmimas per batch'us
     n_classes = len(CLASSES)
@@ -80,7 +80,7 @@ def train():
     train_loader = DataLoader(
         train_ds, batch_size=256, sampler=sampler, num_workers=0, pin_memory=True
     )
-    val_loader   = DataLoader(
+    val_loader = DataLoader(
         val_ds, batch_size=512, shuffle=False, num_workers=0, pin_memory=True
     )
 
@@ -98,17 +98,17 @@ def train():
     print("[DBG] first batch dtypes:", X0.dtype, y0.dtype, "| shape:", X0.shape)
     del X0, y0
 
-    # --- LOSS (su class weights) ---
-   # weights = compute_epoch_class_weights(train_ds, n_classes).to(device)
-   # print("[INFO] class weights (CE):", weights.detach().cpu().numpy())
+    # --- LOSS ---
+    # Pastaba: jei naudoji label_smoothing, class weights dažnai nebūtini.
+    # Bet jei torch versija nepalaiko label_smoothing, turim fallback su weights.
+    weights = compute_epoch_class_weights(train_ds, n_classes).to(device)
+    print("[INFO] class weights (CE):", weights.detach().cpu().numpy())
 
-    # Naudojam CrossEntropyLoss (modelis TURI grąžinti RAW LOGITS)
-    # Jei tavo torch versija palaiko, galima švelniai pridėti label smoothing
     try:
-       # loss_fn = nn.CrossEntropyLoss(weight=weights, label_smoothing=0.05)
-	loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)
-
+        # naujesnė PyTorch versija palaiko label_smoothing
+        loss_fn = nn.CrossEntropyLoss(label_smoothing=0.05)
     except TypeError:
+        # fallback senesnei PyTorch versijai (be label_smoothing)
         loss_fn = nn.CrossEntropyLoss(weight=weights)
 
     # --- OPT/SCHED ---
@@ -129,11 +129,11 @@ def train():
 
         for bi, (X, y) in enumerate(train_loader):
             X = X.to(device=device, dtype=torch.float32, non_blocking=True)
-            y = y.to(device=device, dtype=torch.long,   non_blocking=True)
+            y = y.to(device=device, dtype=torch.long, non_blocking=True)
             X = zscore(X)
 
             opt.zero_grad(set_to_none=True)
-            logits = model(X)            # RAW LOGITS
+            logits = model(X)  # RAW LOGITS
             loss = loss_fn(logits, y)
             loss.backward()
 

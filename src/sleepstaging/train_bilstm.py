@@ -83,7 +83,7 @@ def train():
     sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode="max", factor=0.5, patience=3)
 
     best_f1 = 0.0
-    patience = 10
+    patience = 25
     no_improve = 0
     EPOCHS = 30
 

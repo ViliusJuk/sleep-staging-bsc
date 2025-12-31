@@ -1,0 +1,7 @@
+model,mode,accuracy,f1_macro,kappa,bias_N1,bias_N3,k_smooth
+CNN,raw,0.849068,0.677875,0.709868,,,5
+CNN,bias_smooth,0.891591,0.711083,0.784473,-0.9,-1.0,5
+BiLSTM,raw,0.939347,0.848087,0.875386,,,5
+BiLSTM,bias_smooth,0.948780,0.846558,0.893308,-0.70,-0.60,5
+Transformer,raw,0.964773,0.915698,0.926413,,,5
+Transformer,bias_smooth,0.968900,0.892014,0.934109,-1.00,-1.00,5

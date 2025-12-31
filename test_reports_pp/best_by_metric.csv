@@ -1,0 +1,7 @@
+model,mode,accuracy,f1_macro,kappa
+Transformer,raw,0.964773,,
+Transformer,bias_smooth,0.9689,,
+Transformer,raw,,0.915698,
+Transformer,bias_smooth,,0.892014,
+Transformer,raw,,,0.926413
+Transformer,bias_smooth,,,0.934109

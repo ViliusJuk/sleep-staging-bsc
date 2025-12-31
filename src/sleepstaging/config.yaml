@@ -12,6 +12,5 @@ paths:
 
 split:
   strategy: "by_subject"
-  test_subjects: ["SC4001E0", "SC4002E0","SC4012E0","SC4081E0"] 
-  val_subjects:  [SC4091E0]
-  test_subjects: ["SC4311E0"]
+  val_subjects:  ["SC4081E0","SC4082E0","SC4091E0","SC4092E0","SC4101E0"]
+  test_subjects: ["SC4102E0","SC4111E0","SC4112E0","SC4121E0","SC4122E0"]
